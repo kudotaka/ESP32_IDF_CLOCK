@@ -1,0 +1,286 @@
+menu "My DevBoard hardware config"
+    config SOFTWARE_INTERNAL_WIFI_SUPPORT
+        bool "WIFI-Hardware"
+        default y
+    config SOFTWARE_ESP_MQTT_SUPPORT
+        bool "ESP MQTT"
+        depends on SOFTWARE_INTERNAL_WIFI_SUPPORT
+        default n
+    config SOFTWARE_INTERNAL_BUTTON_SUPPORT
+        bool "BUTTON-Hardware [Internal]"
+        default n
+endmenu
+
+menu "My DevBoard software config"
+
+    config ESP_WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            SSID (network name) for the example to connect to.
+
+    config ESP_WIFI_PASSWORD
+        string "WiFi Password"
+        default "mypassword"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    choice ESP_WIFI_SAE_MODE
+        prompt "WPA3 SAE mode selection"
+        default ESP_WPA3_SAE_PWE_BOTH
+        help
+            Select mode for SAE as Hunt and Peck, H2E or both.
+        config ESP_WPA3_SAE_PWE_HUNT_AND_PECK
+            bool "HUNT AND PECK"
+        config ESP_WPA3_SAE_PWE_HASH_TO_ELEMENT
+            bool "H2E"
+        config ESP_WPA3_SAE_PWE_BOTH
+            bool "BOTH"
+    endchoice
+
+    config ESP_WIFI_PW_ID
+        string "PASSWORD IDENTIFIER"
+        depends on  ESP_WPA3_SAE_PWE_HASH_TO_ELEMENT|| ESP_WPA3_SAE_PWE_BOTH
+        default ""
+        help
+            password identifier for SAE H2E
+
+    config ESP_WIFI_MAXIMUM_RETRY
+        int "Maximum retry"
+        default 5
+        help
+            Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
+
+    choice ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD
+        prompt "WiFi Scan auth mode threshold"
+        default ESP_WIFI_AUTH_WPA2_PSK
+        help
+            The weakest authmode to accept in the scan mode.
+            This value defaults to ESP_WIFI_AUTH_WPA2_PSK incase password is present and ESP_WIFI_AUTH_OPEN is used.
+            Please select ESP_WIFI_AUTH_WEP/ESP_WIFI_AUTH_WPA_PSK incase AP is operating in WEP/WPA mode.
+
+        config ESP_WIFI_AUTH_OPEN
+            bool "OPEN"
+        config ESP_WIFI_AUTH_WEP
+            bool "WEP"
+        config ESP_WIFI_AUTH_WPA_PSK
+            bool "WPA PSK"
+        config ESP_WIFI_AUTH_WPA2_PSK
+            bool "WPA2 PSK"
+        config ESP_WIFI_AUTH_WPA_WPA2_PSK
+            bool "WPA/WPA2 PSK"
+        config ESP_WIFI_AUTH_WPA3_PSK
+            bool "WPA3 PSK"
+        config ESP_WIFI_AUTH_WPA2_WPA3_PSK
+            bool "WPA2/WPA3 PSK"
+        config ESP_WIFI_AUTH_WAPI_PSK
+            bool "WAPI PSK"
+    endchoice
+
+    config HTTPS_OTA_SUPPORT
+        bool "ESP HTTPS OTA"
+        depends on SOFTWARE_INTERNAL_WIFI_SUPPORT
+        default n
+    config HTTPS_OTA_URL
+        string "HTTPS OTA URL"
+        default "https://XXX.XXX.XXX.XXX:443/firmware/"
+
+    config BROKER_URL
+        string "Broker URL"
+        default "mqtt://XXX.XXX.XXX.XXX:1883"
+        help
+            URL of the broker to connect to
+    config BROKER_BUFFER_SIZE
+        int "Broker Buffer Size"
+        default 1024
+    config BROKER_LWT_QOS
+        int "Broker lwt_qos"
+        default 1
+    config BROKER_MY_DEVICE_ID
+        string "Device ID"
+        default "ESP32n01"
+    config BROKER_MY_PUB_TOPIC
+        string "Pub Topic"
+        default "pub/v1/ESP32n01"
+
+    config NTP_SERVER_NAME
+        string "Ntp Server Name"
+        default "XXX.XXX.XXX.XXX"
+    config NTP_CLOCK_LOG_ENABLE
+        bool "Clock Log Enable"
+        default n
+
+    config DEEP_SLEEP_SUPPORT
+        bool "DEEP SLEEP"
+        default n
+
+    config DEEP_SLEEP_WAKEUP_TIME_SEC
+        depends on DEEP_SLEEP_SUPPORT
+        int "wakeup time (sec)"
+        default 30
+        range 10 600
+
+    config DEEP_SLEEP_GPIO_WAKEUP
+        bool "Enable wakeup from GPIO"
+        default n
+        depends on SOC_GPIO_SUPPORT_DEEPSLEEP_WAKEUP
+        help
+            This option enables wake up from GPIO. Be aware that if you use low level to trigger wakeup, we strongly
+            recommend you to connect external pull-up resistance.
+
+    menu "GPIO wakeup configuration"
+        visible if DEEP_SLEEP_GPIO_WAKEUP
+
+        config DEEP_SLEEP_GPIO_WAKEUP_PIN
+            int "Enable wakeup from GPIO"
+            default 0
+            range 0 7 if IDF_TARGET_ESP32C6
+            range 0 15 if IDF_TARGET_ESP32P4
+            range 0 5 if !IDF_TARGET_ESP32C6
+
+        config DEEP_SLEEP_GPIO_WAKEUP_HIGH_LEVEL
+            bool "Enable GPIO high-level wakeup"
+            default n
+            help
+                This option set the gpio wake-up trigger signal, In deep sleep, only high or low level wake-up is
+                supported. If this option is enabled, it is a high level wake up, otherwise it is a low level wake up.
+    endmenu
+
+    config MEASURE_OPERATION_VOLTAGE_SUPPORT
+        bool "Measure Operation Voltage"
+        default n
+
+endmenu
+
+menu "My DevUnit config"
+    config SOFTWARE_EXTERNAL_RTC_SUPPORT
+        bool "RTC(PCF8563)-Hardware [External]"
+        select SOFTWARE_EXTERNAL_I2C_SUPPORT
+        default n
+    config SOFTWARE_EXTERNAL_RTC_CLOCKOUT_1KHZ_SUPPORT
+        bool "RTC(PCF8563) CLOCKOUT_1KHZ"
+        depends on SOFTWARE_EXTERNAL_RTC_SUPPORT
+        default n
+    config SOFTWARE_EXTERNAL_BUTTON_SUPPORT
+        bool "BUTTON-Hardware [External]"
+        default n
+    config SOFTWARE_EXTERNAL_SK6812_SUPPORT
+        bool "RGB(SK6812)-LED-Hardware [External]"
+        default n
+    config SOFTWARE_EXTERNAL_LED_SUPPORT
+        bool "LED-Hardware [External]"
+        default n
+    config SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT
+        bool "6DIGIT Display-Hardware [External]"
+        default n
+    config SOFTWARE_EXTERNAL_ENV2_SUPPORT
+        bool "UNIT ENV2-Hardware [External]"
+        select SOFTWARE_SENSOR_SHT3X
+        select SOFTWARE_SENSOR_BMP280
+        default n
+    config SOFTWARE_EXTERNAL_ENV3_SUPPORT
+        bool "UNIT ENV3-Hardware [External]"
+        select SOFTWARE_SENSOR_SHT3X
+        select SOFTWARE_SENSOR_QMP6988
+        default n
+    config SOFTWARE_EXTERNAL_ENV4_SUPPORT
+        bool "UNIT ENV4-Hardware [External]"
+        select SOFTWARE_SENSOR_SHT4X
+        select SOFTWARE_SENSOR_BMP280
+        default n
+    config SOFTWARE_EXTERNAL_I2C_SUPPORT
+        bool "I2C-Hardware [External]"
+        default n
+    config SOFTWARE_EXTERNAL_UART_SUPPORT
+        bool "UART-Hardware [External]"
+        default n
+
+    menu "Sensor config"
+        config SOFTWARE_SENSOR_SHT3X
+            bool "SENSOR SHT3X"
+            select SOFTWARE_SENSOR_TYPE_TEMPERATURE
+            select SOFTWARE_SENSOR_TYPE_HUMIDITY
+            select SOFTWARE_EXTERNAL_I2C_SUPPORT
+            default n
+        config SOFTWARE_SENSOR_SHT4X
+            bool "SENSOR SHT4X"
+            select SOFTWARE_SENSOR_TYPE_TEMPERATURE
+            select SOFTWARE_SENSOR_TYPE_HUMIDITY
+            select SOFTWARE_EXTERNAL_I2C_SUPPORT
+            default n
+        config SOFTWARE_SENSOR_BMP280
+            bool "SENSOR BMP280"
+            select SOFTWARE_SENSOR_TYPE_PRESSURE
+            select SOFTWARE_EXTERNAL_I2C_SUPPORT
+            default n
+        config SOFTWARE_SENSOR_QMP6988
+            bool "SENSOR QMP6988"
+            select SOFTWARE_SENSOR_TYPE_PRESSURE
+            select SOFTWARE_EXTERNAL_I2C_SUPPORT
+            default n
+        config SOFTWARE_SENSOR_BME680
+            bool "SENSOR BME680"
+            select SOFTWARE_SENSOR_TYPE_TEMPERATURE
+            select SOFTWARE_SENSOR_TYPE_HUMIDITY
+            select SOFTWARE_SENSOR_TYPE_PRESSURE
+            select SOFTWARE_EXTERNAL_I2C_SUPPORT
+            default n
+        config SOFTWARE_SENSOR_ADT7410
+            bool "SENSOR ADT7410"
+            select SOFTWARE_SENSOR_TYPE_TEMPERATURE
+            select SOFTWARE_EXTERNAL_I2C_SUPPORT
+            default n
+        config SOFTWARE_SENSOR_SCD30
+            bool "SENSOR SCD30"
+            select SOFTWARE_SENSOR_TYPE_TEMPERATURE
+            select SOFTWARE_SENSOR_TYPE_HUMIDITY
+            select SOFTWARE_SENSOR_TYPE_CO2
+            select SOFTWARE_EXTERNAL_I2C_SUPPORT
+            default n
+        config SOFTWARE_SENSOR_SCD40
+            bool "SENSOR SCD40"
+            select SOFTWARE_SENSOR_TYPE_TEMPERATURE
+            select SOFTWARE_SENSOR_TYPE_HUMIDITY
+            select SOFTWARE_SENSOR_TYPE_CO2
+            select SOFTWARE_EXTERNAL_I2C_SUPPORT
+            default n
+        config SOFTWARE_SENSOR_MHZ19C
+            bool "SENSOR MHZ19C"
+            select SOFTWARE_SENSOR_TYPE_CO2
+            select SOFTWARE_EXTERNAL_UART_SUPPORT
+            default n
+        config SOFTWARE_SENSOR_BH1750
+            bool "SENSOR BH1750"
+            select SOFTWARE_SENSOR_TYPE_LIGHT
+            select SOFTWARE_EXTERNAL_I2C_SUPPORT
+            default n
+
+    endmenu
+
+    menu "Sensor type config"
+        config SOFTWARE_SENSOR_TYPE_TEMPERATURE
+            bool "SENSOR-TYPE TEMPERATURE"
+            select SOFTWARE_SENSOR_USE_SENSOR
+            default n
+        config SOFTWARE_SENSOR_TYPE_HUMIDITY
+            bool "SENSOR-TYPE HUMIDITY"
+            select SOFTWARE_SENSOR_USE_SENSOR
+            default n
+        config SOFTWARE_SENSOR_TYPE_PRESSURE
+            bool "SENSOR-TYPE PRESSURE"
+            select SOFTWARE_SENSOR_USE_SENSOR
+            default n
+        config SOFTWARE_SENSOR_TYPE_CO2
+            bool "SENSOR-TYPE CO2"
+            select SOFTWARE_SENSOR_USE_SENSOR
+            default n
+        config SOFTWARE_SENSOR_TYPE_LIGHT
+            bool "SENSOR-TYPE LIGHT"
+            select SOFTWARE_SENSOR_USE_SENSOR
+            default n
+        config SOFTWARE_SENSOR_USE_SENSOR
+            bool "USE Sensor"
+
+    endmenu
+
+endmenu
