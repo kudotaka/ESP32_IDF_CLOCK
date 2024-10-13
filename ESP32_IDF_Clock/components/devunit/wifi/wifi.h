@@ -10,14 +10,9 @@ extern "C" {
 #include "esp_event.h"
 
 #if CONFIG_SOFTWARE_INTERNAL_WIFI_SUPPORT
-esp_err_t Wifi_Init(void);
-esp_err_t Wifi_DeInit(void);
-
-esp_err_t Wifi_Start(void);
-esp_err_t Wifi_Stop(void);
-esp_err_t Wifi_Connect(void);
-esp_err_t Wifi_Disconnect(void);
-esp_err_t Wifi_IsConnected(void);
+esp_err_t wifi_isConnected(void);
+void wifi_initialise(void);
+void wifi_stop(void);
 #endif
 
 #ifdef __cplusplus

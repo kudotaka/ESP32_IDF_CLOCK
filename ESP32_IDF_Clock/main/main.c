@@ -58,7 +58,7 @@ static void obtain_time(void)
     ESP_ERROR_CHECK( nvs_flash_init() );
     ESP_ERROR_CHECK( esp_netif_init() );
 
-    while ( Wifi_IsConnected() != ESP_OK )
+    while ( wifi_isConnected() != ESP_OK )
     {
         vTaskDelay( pdMS_TO_TICKS(5000) );
     }
@@ -104,15 +104,8 @@ void sntp_main()
 
     time_t now;
     struct tm timeinfo;
+    obtain_time();
     time(&now);
-    localtime_r(&now, &timeinfo);
-    // Is time set? If not, tm_year will be (1970 - 1900).
-    if (timeinfo.tm_year < (2016 - 1900)) {
-        ESP_LOGI(TAG, "Time is not set yet. Connecting to WiFi and getting time over NTP.");
-        obtain_time();
-        // update 'now' variable with current time
-        time(&now);
-    }
 
     char strftime_buf[64];
     localtime_r(&now, &timeinfo);
@@ -189,9 +182,9 @@ static void gpio_clock_task(void* arg)
 
 void RtcSntpUpdateTime()
 {
-    Wifi_Start();
+    wifi_initialise();
     sntp_main();
-    Wifi_Stop();
+    wifi_stop();
 }
 
 static void gpio_int_task(void* arg)
@@ -257,7 +250,7 @@ void RtcStartWifiSntpInit()
     while (!PCF8563_isInitialized()) {
         vTaskDelay( pdMS_TO_TICKS(5000) );
     }
-    int8_t minute = 56;
+    int8_t minute = 34;
     int8_t hour = -1;
     int8_t day = -1;
     int8_t week = -1;
@@ -295,7 +288,7 @@ static void clock_main()
     ret = PCF8563_Init(i2c0_master_bus_handle);
     if (ret == ESP_OK) {
         ESP_LOGD(TAG, "PCF8563_Init() is OK!");
-        Wifi_Init();
+
         RtcSntpUpdateTime();
 
         RtcInterruptInit();
