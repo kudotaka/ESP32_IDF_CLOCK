@@ -2,7 +2,7 @@
 #include <string.h>
 
 #define PCF8563_ADDR (0x51)
-#define PCF8563_STANDARD_BAUD (100000)
+#define PCF8563_STANDARD_BAUD (400000)
 #define PCF8563_TIMEOUT_VALUE_MS (100)
 
 static const char *TAG = "MY-PCF8563";

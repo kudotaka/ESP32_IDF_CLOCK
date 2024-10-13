@@ -345,6 +345,21 @@ void Tm1637_DisplayClockDot(DigitDisplay_t* digitdisplay, uint8_t disp_data[]) {
         }
         seg_data[5] = Tm1637_Coding_One(digitdisplay, DATA_CREAR, POINT_OFF);
     }
+    else if (digitdisplay->digit_count == 4)
+    {
+        // seeed Grove - 4-Digit Display
+        seg_data[0] = Tm1637_Coding_One(digitdisplay, disp_data[0], POINT_OFF);
+        if (disp_data[5] % 2 == 0)
+        {
+            seg_data[1] = Tm1637_Coding_One(digitdisplay, disp_data[1], POINT_OFF);
+        }
+        else
+        {
+            seg_data[1] = Tm1637_Coding_One(digitdisplay, disp_data[1], POINT_ON);
+        }
+        seg_data[2] = Tm1637_Coding_One(digitdisplay, disp_data[2], POINT_OFF);
+        seg_data[3] = Tm1637_Coding_One(digitdisplay, disp_data[3], POINT_OFF);
+    }
     else
     {
         for (uint8_t i = 0; i < digitdisplay->digit_count; i++) {

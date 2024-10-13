@@ -24,7 +24,7 @@
     || CONFIG_SOFTWARE_SENSOR_SCD40 \
     || CONFIG_SOFTWARE_SENSOR_MHZ19C \
     || CONFIG_SOFTWARE_SENSOR_BH1750 \
-    || CONFIG_SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT \
+    || CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT \
     || CONFIG_SOFTWARE_EXTERNAL_SK6812_SUPPORT \
     || CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT \
     || CONFIG_SOFTWARE_EXTERNAL_BUTTON_SUPPORT \
@@ -131,19 +131,24 @@ static void IRAM_ATTR gpio_int_isr_handler(void* arg)
 
 static void gpio_clock_task(void* arg)
 {
-#if CONFIG_SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT
+#if CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
     bool bTm1637Init = false;
     DigitDisplay_t* digitdisplay_1;
     uint8_t listDisp_1[XDIGIT_DISPLAY_DIGIT_COUNT];
     Tm1637_Init();
     if (Tm1637_Enable(XDIGIT_DISPLAY_CLK_EXT1_GPIO_PIN, XDIGIT_DISPLAY_DATA_EXT1_GPIO_PIN) == ESP_OK) {
-        digitdisplay_1 = Tm1637_Attach(XDIGIT_DISPLAY_CLK_EXT1_GPIO_PIN, XDIGIT_DISPLAY_DATA_EXT1_GPIO_PIN, BRIGHT_DARKEST, XDIGIT_DISPLAY_DIGIT_COUNT);
+#if CONFIG_SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT
+        digitdisplay_1 = Tm1637_Attach(XDIGIT_DISPLAY_CLK_EXT1_GPIO_PIN, XDIGIT_DISPLAY_DATA_EXT1_GPIO_PIN, BRIGHT_DARKEST, 6);
+#endif // CONFIG_SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT
+#if CONFIG_SOFTWARE_EXTERNAL_4DIGIT_DISPLAY_SUPPORT
+        digitdisplay_1 = Tm1637_Attach(XDIGIT_DISPLAY_CLK_EXT1_GPIO_PIN, XDIGIT_DISPLAY_DATA_EXT1_GPIO_PIN, BRIGHT_DARKEST, 4);
+#endif // CONFIG_SOFTWARE_EXTERNAL_4DIGIT_DISPLAY_SUPPORT
         bTm1637Init = true;
         Tm1637_ClearDisplay(digitdisplay_1);
     } else {
         ESP_LOGE(TAG, "Digit Display Tm1637_Enable Error");
     }
-#endif //CONFIG_SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT
+#endif //CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
 
     uint32_t io_num;
     for (;;) {
@@ -151,7 +156,7 @@ static void gpio_clock_task(void* arg)
 //            ESP_LOGI(TAG, "CLOCK GPIO[%"PRIu32"] intr, val: %d", io_num, gpio_get_level(io_num));
             rtc_date_t rtcdate;
             PCF8563_GetTime(&rtcdate);
-#if CONFIG_SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT
+#if CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
             if (bTm1637Init == true)
             {
                 uint8_t hour10 = rtcdate.hour / 10;
@@ -171,11 +176,11 @@ static void gpio_clock_task(void* arg)
             }
             else
             {
-#endif //CONFIG_SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT
+#endif //CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
                 ESP_LOGI(TAG, "%04d/%02d/%02d %02d:%02d:%02d", rtcdate.year, rtcdate.month, rtcdate.day, rtcdate.hour, rtcdate.minute, rtcdate.second);
-#if CONFIG_SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT
+#if CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
             }
-#endif //CONFIG_SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT
+#endif //CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
         }
     }
 }
