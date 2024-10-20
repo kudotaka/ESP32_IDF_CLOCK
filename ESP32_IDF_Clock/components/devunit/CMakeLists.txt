@@ -2,6 +2,9 @@
 set(COMPONENT_ADD_INCLUDEDIRS .)
 set(COMPONENT_REQUIRES "driver" "esp_wifi" "nvs_flash" "esp_netif" "lwip" "esp_event" "mqtt")
 
+list(APPEND COMPONENT_SRCDIRS mysystem)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS mysystem)
+
 if(CONFIG_SOFTWARE_INTERNAL_WIFI_SUPPORT)
     list(APPEND COMPONENT_SRCDIRS wifi)
     list(APPEND COMPONENT_ADD_INCLUDEDIRS wifi)

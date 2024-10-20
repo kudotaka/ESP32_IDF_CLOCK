@@ -200,6 +200,10 @@ static void gpio_int_task(void* arg)
         if (xQueueReceive(gpio_evt_int_queue, &io_num, portMAX_DELAY)) {
 //            ESP_LOGI(TAG, "INT GPIO[%"PRIu32"] intr, val: %d", io_num, gpio_get_level(io_num));
             RtcSntpUpdateTime();
+
+            vTaskDelay( pdMS_TO_TICKS(60000) );
+            PCF8563_ClearIRQ();
+            ESP_LOGI(TAG, "PCF8563_ClearIRQ()");
         }
     }
 }
