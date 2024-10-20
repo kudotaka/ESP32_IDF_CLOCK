@@ -9,6 +9,7 @@
 #include "esp_netif.h"
 #include "esp_netif_sntp.h"
 #include "esp_sntp.h"
+#include "esp_random.h"
 #include "nvs_flash.h"
 
 #if (  CONFIG_SOFTWARE_INTERNAL_WIFI_SUPPORT \
@@ -255,7 +256,8 @@ void RtcStartWifiSntpInit()
     while (!PCF8563_isInitialized()) {
         vTaskDelay( pdMS_TO_TICKS(5000) );
     }
-    int8_t minute = 34;
+//    int8_t minute = 34;
+    int8_t minute = ( esp_random()%60 );
     int8_t hour = -1;
     int8_t day = -1;
     int8_t week = -1;
