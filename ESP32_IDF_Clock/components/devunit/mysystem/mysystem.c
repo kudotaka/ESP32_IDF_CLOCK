@@ -38,9 +38,9 @@ esp_err_t createHostnameFromChipAndMacAddress(char *hostname, uint8_t size)
 {
     uint8_t base_mac_addr[6] = {0};
     ESP_ERROR_CHECK(esp_read_mac(base_mac_addr, ESP_MAC_BASE));
-    ESP_LOGI(TAG, "Using \"%X:%X:%X:%X:%X:%X\" as base MAC address",
+    ESP_LOGI(TAG, "Using \"%02X:%02X:%02X:%02X:%02X:%02X\" as base MAC address",
              base_mac_addr[0], base_mac_addr[1], base_mac_addr[2], base_mac_addr[3], base_mac_addr[4], base_mac_addr[5]);
 
-    snprintf(hostname, size, "%s-%x%x%x", getChipModelName(), base_mac_addr[3], base_mac_addr[4], base_mac_addr[5]);
+    snprintf(hostname, size, "%s-%02x%02x%02x", getChipModelName(), base_mac_addr[3], base_mac_addr[4], base_mac_addr[5]);
     return ESP_OK;
 }
