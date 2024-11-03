@@ -98,5 +98,9 @@ menu "My DevUnit config"
         bool "DIGIT Display-Hardware [External]"
         depends on SOFTWARE_EXTERNAL_6DIGIT_DISPLAY_SUPPORT || SOFTWARE_EXTERNAL_4DIGIT_DISPLAY_SUPPORT
         default y
+    config SOFTWARE_EXTERNAL_HT16K33_SUPPORT
+        bool "HT16K33-Hardware [External]"
+        select SOFTWARE_EXTERNAL_I2C_SUPPORT
+        default n
     
 endmenu

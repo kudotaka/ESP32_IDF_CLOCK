@@ -138,6 +138,10 @@ extern "C" {
 #include "tm1637.h"
 #endif
 
+#if CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
+#include "ht16k33.h"
+#endif
+
 #ifdef __cplusplus
 }
 #endif

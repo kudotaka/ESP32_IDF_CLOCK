@@ -11,6 +11,8 @@ extern "C" {
 #include "esp_chip_info.h"
 
 esp_err_t createHostnameFromChipAndMacAddress(char *hostname, uint8_t size);
+uint8_t convertCharToSegments(char c);
+uint8_t convertNumberToSegments(int8_t number);
 
 #ifdef __cplusplus
 }

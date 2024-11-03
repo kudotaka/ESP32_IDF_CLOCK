@@ -29,6 +29,7 @@
     || CONFIG_SOFTWARE_EXTERNAL_SK6812_SUPPORT \
     || CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT \
     || CONFIG_SOFTWARE_EXTERNAL_BUTTON_SUPPORT \
+    || CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT \
     || CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT )
 #include "devunit.h"
 #endif
@@ -150,7 +151,13 @@ static void gpio_clock_task(void* arg)
         ESP_LOGE(TAG, "Digit Display Tm1637_Enable Error");
     }
 #endif //CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
+#if CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
+        bool bHt16K33Init = true;
+#endif //CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
 
+    uint8_t backupHour = 0;
+    uint8_t backupMinute = 0;
+    uint8_t backupSecond = 0;
     uint32_t io_num;
     for (;;) {
         if (xQueueReceive(gpio_evt_clock_queue, &io_num, portMAX_DELAY)) {
@@ -178,10 +185,49 @@ static void gpio_clock_task(void* arg)
             else
             {
 #endif //CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
+#if CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
+            if (bHt16K33Init == true)
+            {
+                uint8_t clockArray[5] = { 0 };
+//                HT16K33_ParseTimeToDigitClockAndPulse(rtcdate.hour, rtcdate.minute, rtcdate.second, clockArray, sizeof(clockArray)/sizeof(uint8_t));
+                if (backupSecond != rtcdate.second)
+                {
+                    HT16K33_ParseTimeToSecondAndPulse(rtcdate.second, &clockArray[4], 1);
+                    if (clockArray[4] == 0)
+                    {
+                        HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM4, HT16K33_COM_FIRST_HALF, convertCharToSegments(' '));
+                    }
+                    else
+                    {
+                        HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM4, HT16K33_COM_FIRST_HALF, convertCharToSegments(':'));
+                    }
+                    backupSecond = rtcdate.second;
+                }
+                if (backupMinute != rtcdate.minute)
+                {
+                    HT16K33_ParseTimeToMinute(rtcdate.minute, &clockArray[2], 2);
+                    HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM3, HT16K33_COM_FIRST_HALF, clockArray[3]);
+                    HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM2, HT16K33_COM_FIRST_HALF, clockArray[2]);
+                    backupMinute = rtcdate.minute;
+                }
+                if (backupHour != rtcdate.hour)
+                {
+                    HT16K33_ParseTimeToHour(rtcdate.hour, &clockArray[0], 2);
+                    HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM1, HT16K33_COM_FIRST_HALF, clockArray[1]);
+                    HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM0, HT16K33_COM_FIRST_HALF, clockArray[0]);
+                    backupHour = rtcdate.hour;
+                }
+            }
+            else
+            {
+#endif //CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
                 ESP_LOGI(TAG, "%04d/%02d/%02d %02d:%02d:%02d", rtcdate.year, rtcdate.month, rtcdate.day, rtcdate.hour, rtcdate.minute, rtcdate.second);
 #if CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
             }
 #endif //CONFIG_SOFTWARE_EXTERNAL_DIGIT_DISPLAY_SUPPORT
+#if CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
+            }
+#endif //CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
         }
     }
 }
@@ -295,6 +341,17 @@ static void clock_main()
         ESP_LOGE(TAG, "I2C i2c_new_master_bus error");
     }
 
+#if CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
+    ret = HT16K33_Init(i2c0_master_bus_handle);
+    if (ret == ESP_OK) {
+        ESP_LOGD(TAG, "HT16K33_Init() is OK!");
+    }
+    else
+    {
+        ESP_LOGE(TAG, "HT16K33_Init Error");
+    }
+#endif //CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
+
 #if CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT
     ret = PCF8563_Init(i2c0_master_bus_handle);
     if (ret == ESP_OK) {
@@ -310,7 +367,7 @@ static void clock_main()
     {
         ESP_LOGE(TAG, "PCF8563_Init Error");
     }
-#endif
+#endif //CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -321,6 +378,7 @@ void app_main(void)
     esp_log_level_set("*", ESP_LOG_ERROR);
     esp_log_level_set("MY-MAIN", ESP_LOG_INFO);
     esp_log_level_set("MY-WIFI", ESP_LOG_INFO);
+    esp_log_level_set("MY-HT16K33", ESP_LOG_INFO);
 
 #if CONFIG_SOFTWARE_INTERNAL_WIFI_SUPPORT
     clock_main();
