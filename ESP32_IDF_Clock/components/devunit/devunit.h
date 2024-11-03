@@ -142,6 +142,10 @@ extern "C" {
 #include "ht16k33.h"
 #endif
 
+#if CONFIG_SOFTWARE_SENSOR_SHT4X_SUPPORT
+#include "sht4x.h"
+#endif
+
 #ifdef __cplusplus
 }
 #endif

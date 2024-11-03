@@ -16,7 +16,7 @@
     || CONFIG_SOFTWARE_INTERNAL_BUTTON_SUPPORT \
     || CONFIG_SOFTWARE_EXTERNAL_SK6812_SUPPORT \
     || CONFIG_SOFTWARE_SENSOR_SHT3X \
-    || CONFIG_SOFTWARE_SENSOR_SHT4X \
+    || CONFIG_SOFTWARE_SENSOR_SHT4X_SUPPORT \
     || CONFIG_SOFTWARE_SENSOR_BMP280 \
     || CONFIG_SOFTWARE_SENSOR_QMP6988 \
     || CONFIG_SOFTWARE_SENSOR_BME680 \
@@ -43,6 +43,10 @@ void RtcStartClockInit(void);
 static bool g_clockout_status = false;
 #endif //CONFIG_SOFTWARE_EXTERNAL_RTC_CLOCKOUT_1KHZ_SUPPORT
 #endif //CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT
+
+#if CONFIG_SOFTWARE_SENSOR_SHT4X_SUPPORT
+bool g_isSensorSht4x = false;
+#endif //CONFIG_SOFTWARE_SENSOR_SHT4X_SUPPORT
 
 static void obtain_time(void);
 static void clock_main(void);
@@ -208,6 +212,26 @@ static void gpio_clock_task(void* arg)
                     HT16K33_ParseTimeToMinute(rtcdate.minute, &clockArray[2], 2);
                     HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM3, HT16K33_COM_FIRST_HALF, clockArray[3]);
                     HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM2, HT16K33_COM_FIRST_HALF, clockArray[2]);
+
+#if CONFIG_SOFTWARE_SENSOR_SHT4X_SUPPORT
+                    if (g_isSensorSht4x) {
+                        uint8_t temperatureArray[3] = { 0 };
+                        uint8_t humidityArray[3] = { 0 };
+                        esp_err_t ret = Sht4x_Read();
+                        if (ret == ESP_OK) {
+                            vTaskDelay( pdMS_TO_TICKS(20) );
+                            HT16K33_ParseFloatToDigit2Point1(Sht4x_GetTemperature(), temperatureArray, 3);
+                            HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM0, HT16K33_COM_SECOND_HALF, temperatureArray[0]);
+                            HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM1, HT16K33_COM_SECOND_HALF, temperatureArray[1]);
+                            HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM2, HT16K33_COM_SECOND_HALF, temperatureArray[2]);
+                            HT16K33_ParseFloatToDigit2Point1(Sht4x_GetHumidity(), humidityArray, 3);
+                            HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM5, HT16K33_COM_FIRST_HALF, humidityArray[0]);
+                            HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM6, HT16K33_COM_FIRST_HALF, humidityArray[1]);
+                            HT16K33_DisplayFromRawDataAt1Byte(HT16K33_COM7, HT16K33_COM_FIRST_HALF, humidityArray[2]);
+                        }
+                    }
+#endif //CONFIG_SOFTWARE_SENSOR_SHT4X_SUPPORT
+
                     backupMinute = rtcdate.minute;
                 }
                 if (backupHour != rtcdate.hour)
@@ -368,6 +392,19 @@ static void clock_main()
         ESP_LOGE(TAG, "PCF8563_Init Error");
     }
 #endif //CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT
+
+#if CONFIG_SOFTWARE_SENSOR_SHT4X_SUPPORT
+    ret = Sht4x_Init(i2c0_master_bus_handle);
+    if (ret == ESP_OK) {
+        ESP_LOGD(TAG, "Sht4x_Init() is OK!");
+        g_isSensorSht4x = true;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Sht4x_Init Error");
+    }
+#endif //CONFIG_SOFTWARE_SENSOR_SHT4X_SUPPORT
+
 }
 
 ////////////////////////////////////////////////////////////////////

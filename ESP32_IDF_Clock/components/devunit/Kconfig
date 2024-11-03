@@ -102,5 +102,9 @@ menu "My DevUnit config"
         bool "HT16K33-Hardware [External]"
         select SOFTWARE_EXTERNAL_I2C_SUPPORT
         default n
-    
+    config SOFTWARE_SENSOR_SHT4X_SUPPORT
+        bool "SENSOR SHT4X-Hardware [External]"
+        select SOFTWARE_EXTERNAL_I2C_SUPPORT
+        default n
+
 endmenu
