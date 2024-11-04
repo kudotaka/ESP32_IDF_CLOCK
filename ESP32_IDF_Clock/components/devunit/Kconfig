@@ -106,5 +106,8 @@ menu "My DevUnit config"
         bool "SENSOR SHT4X-Hardware [External]"
         select SOFTWARE_EXTERNAL_I2C_SUPPORT
         default n
+    config SOFTWARE_EXTERNAL_LED_SUPPORT
+        bool "LED-Hardware [External]"
+        default n
 
 endmenu

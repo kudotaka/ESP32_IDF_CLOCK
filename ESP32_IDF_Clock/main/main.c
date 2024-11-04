@@ -12,6 +12,16 @@
 #include "esp_random.h"
 #include "nvs_flash.h"
 
+#if CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
+#include "driver/ledc.h"
+#define LEDC_LS_TIMER          LEDC_TIMER_0
+#define LEDC_LS_MODE           LEDC_LOW_SPEED_MODE
+#define LEDC_LS_CH0_GPIO       LED_EXT1_GPIO_PIN
+#define LEDC_LS_CH0_CHANNEL    LEDC_CHANNEL_0
+#define LEDC_DUTY_RESOLUTION   (4096)
+#define LEDC_FADE_TIME         (2500)
+#endif // CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
+
 #if (  CONFIG_SOFTWARE_INTERNAL_WIFI_SUPPORT \
     || CONFIG_SOFTWARE_INTERNAL_BUTTON_SUPPORT \
     || CONFIG_SOFTWARE_EXTERNAL_SK6812_SUPPORT \
@@ -50,6 +60,10 @@ bool g_isSensorSht4x = false;
 
 static void obtain_time(void);
 static void clock_main(void);
+
+#if CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
+void ledc_led_blink(uint8_t count, uint32_t wait_ms);
+#endif //CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
 
 i2c_master_bus_handle_t i2c0_master_bus_handle;
 
@@ -271,7 +285,13 @@ static void gpio_int_task(void* arg)
 //            ESP_LOGI(TAG, "INT GPIO[%"PRIu32"] intr, val: %d", io_num, gpio_get_level(io_num));
             RtcSntpUpdateTime();
 
+#if CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
+            ledc_led_blink(10, 2000);
+            vTaskDelay( pdMS_TO_TICKS(15000) );
+#else
             vTaskDelay( pdMS_TO_TICKS(60000) );
+#endif //CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
+
             PCF8563_ClearIRQ();
             ESP_LOGI(TAG, "PCF8563_ClearIRQ()");
         }
@@ -407,6 +427,66 @@ static void clock_main()
 
 }
 
+#if CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
+SemaphoreHandle_t counting_Semaphore = NULL;
+ledc_channel_config_t ledc_channel = {};
+static IRAM_ATTR bool cb_ledc_fade_end_event(const ledc_cb_param_t *param, void *user_arg)
+{
+    BaseType_t taskAwoken = pdFALSE;
+
+    if (param->event == LEDC_FADE_END_EVT) {
+        SemaphoreHandle_t counting_Semaphore = (SemaphoreHandle_t) user_arg;
+        xSemaphoreGiveFromISR(counting_Semaphore, &taskAwoken);
+    }
+
+    return (taskAwoken == pdTRUE);
+}
+
+void ledc_led_init()
+{
+    ledc_timer_config_t ledc_timer = {
+        .duty_resolution = LEDC_TIMER_13_BIT, // resolution of PWM duty
+        .freq_hz = 4000,                      // frequency of PWM signal
+        .speed_mode = LEDC_LS_MODE,           // timer mode
+        .timer_num = LEDC_LS_TIMER,            // timer index
+        .clk_cfg = LEDC_AUTO_CLK,              // Auto select the source clock
+    };
+    ledc_timer_config(&ledc_timer);
+
+    ledc_channel.channel    = LEDC_LS_CH0_CHANNEL;
+    ledc_channel.duty       = 0;
+    ledc_channel.gpio_num   = LEDC_LS_CH0_GPIO;
+    ledc_channel.speed_mode = LEDC_LS_MODE;
+    ledc_channel.hpoint     = 0;
+    ledc_channel.timer_sel  = LEDC_LS_TIMER;
+    ledc_channel.flags.output_invert = 0;
+    ledc_channel_config(&ledc_channel);
+
+    ledc_fade_func_install(0);
+    ledc_cbs_t callbacks = {
+        .fade_cb = cb_ledc_fade_end_event
+    };
+    counting_Semaphore = xSemaphoreCreateCounting(1, 0);
+    ledc_cb_register(ledc_channel.speed_mode, ledc_channel.channel, &callbacks, (void *) counting_Semaphore);
+}
+
+void ledc_led_blink(uint8_t count, uint32_t wait_ms)
+{
+    for(uint8_t i = 0; i < count; i++)
+    {
+        ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, LEDC_DUTY_RESOLUTION, LEDC_FADE_TIME);
+        ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_NO_WAIT);
+        xSemaphoreTake(counting_Semaphore, portMAX_DELAY);
+
+        ledc_set_fade_with_time(ledc_channel.speed_mode, ledc_channel.channel, 0, LEDC_FADE_TIME);
+        ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel, LEDC_FADE_NO_WAIT);
+        xSemaphoreTake(counting_Semaphore, portMAX_DELAY);
+
+        vTaskDelay( pdMS_TO_TICKS(wait_ms) );
+    }
+}
+#endif //CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
+
 ////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 void app_main(void)
@@ -421,4 +501,7 @@ void app_main(void)
     clock_main();
 #endif //CONFIG_SOFTWARE_INTERNAL_WIFI_SUPPORT
 
+#if CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
+    ledc_led_init();
+#endif //CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
 }
