@@ -145,6 +145,10 @@ void wifi_init_sta(void)
 
         s_wifi_initalized = true;
     }
+    else
+    {
+        xEventGroupClearBits(s_wifi_event_group, WIFI_DISCONNECTING_BIT);
+    }
 
     ESP_ERROR_CHECK(esp_wifi_start() );
     ESP_LOGI(TAG, "wifi_init_sta finished.");

@@ -58,7 +58,7 @@ static bool g_clockout_status = false;
 bool g_isSensorSht4x = false;
 #endif //CONFIG_SOFTWARE_SENSOR_SHT4X_SUPPORT
 
-static void obtain_time(void);
+static bool obtain_time(void);
 static void clock_main(void);
 
 #if CONFIG_SOFTWARE_EXTERNAL_LED_SUPPORT
@@ -73,15 +73,10 @@ void time_sync_notification_cb(struct timeval *tv)
     ESP_LOGD(TAG, "Notification of a time synchronization event");
 }
 
-static void obtain_time(void)
+static bool obtain_time(void)
 {
     ESP_ERROR_CHECK( nvs_flash_init() );
     ESP_ERROR_CHECK( esp_netif_init() );
-
-    while ( wifi_isConnected() != ESP_OK )
-    {
-        vTaskDelay( pdMS_TO_TICKS(5000) );
-    }
 
     ESP_LOGI(TAG, "Initializing and starting SNTP to... %s", CONFIG_NTP_SERVER_NAME);
 
@@ -94,26 +89,31 @@ static void obtain_time(void)
     struct tm timeinfo = { 0 };
     int retry = 0;
     const int retry_count = 3;
-    while (esp_netif_sntp_sync_wait(2000 / portTICK_PERIOD_MS) == ESP_ERR_TIMEOUT && ++retry < retry_count) {
+    while (esp_netif_sntp_sync_wait(2000 / portTICK_PERIOD_MS) == ESP_ERR_TIMEOUT && ++retry <= retry_count) {
         ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
     }
-    time(&now);
-    localtime_r(&now, &timeinfo);
-#if CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT
-    if (PCF8563_isInitialized() == true)
-    {
-        rtc_date_t rtcdate;
-        rtcdate.year = timeinfo.tm_year+1900;
-        rtcdate.month = timeinfo.tm_mon+1;
-        rtcdate.day = timeinfo.tm_mday;
-        rtcdate.hour = timeinfo.tm_hour;
-        rtcdate.minute = timeinfo.tm_min;
-        rtcdate.second = timeinfo.tm_sec;
-        PCF8563_SetTime(&rtcdate);
-    }
-#endif //CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT
-
     esp_netif_sntp_deinit();
+
+    if (retry < retry_count)
+    {
+        time(&now);
+        localtime_r(&now, &timeinfo);
+#if CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT
+        if (PCF8563_isInitialized() == true)
+        {
+            rtc_date_t rtcdate;
+            rtcdate.year = timeinfo.tm_year+1900;
+            rtcdate.month = timeinfo.tm_mon+1;
+            rtcdate.day = timeinfo.tm_mday;
+            rtcdate.hour = timeinfo.tm_hour;
+            rtcdate.minute = timeinfo.tm_min;
+            rtcdate.second = timeinfo.tm_sec;
+            PCF8563_SetTime(&rtcdate);
+        }
+#endif //CONFIG_SOFTWARE_EXTERNAL_RTC_SUPPORT
+        return true;
+    }
+    return false;
 }
 
 void sntp_main()
@@ -124,13 +124,15 @@ void sntp_main()
 
     time_t now;
     struct tm timeinfo;
-    obtain_time();
-    time(&now);
+    if (obtain_time())
+    {
+        time(&now);
 
-    char strftime_buf[64];
-    localtime_r(&now, &timeinfo);
-    strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-    ESP_LOGI(TAG, "The current date/time in Japan is: %s", strftime_buf);
+        char strftime_buf[64];
+        localtime_r(&now, &timeinfo);
+        strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+        ESP_LOGI(TAG, "The current date/time in Japan is: %s", strftime_buf);
+    }
 }
 
 
