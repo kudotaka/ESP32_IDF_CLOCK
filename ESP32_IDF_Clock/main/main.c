@@ -175,9 +175,11 @@ static void gpio_clock_task(void* arg)
         bool bHt16K33Init = true;
 #endif //CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
 
+#if CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
     uint8_t backupHour = 0;
     uint8_t backupMinute = 0;
     uint8_t backupSecond = 0;
+#endif //CONFIG_SOFTWARE_EXTERNAL_HT16K33_SUPPORT
     uint32_t io_num;
     for (;;) {
         if (xQueueReceive(gpio_evt_clock_queue, &io_num, portMAX_DELAY)) {
